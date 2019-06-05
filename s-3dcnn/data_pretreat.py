@@ -7,14 +7,18 @@ def zero_pad(X,pad):
     return X_pad
 
 def normalize(X):
+    X = X.astype('float32')
     return (X-np.min(X))/(np.max(X)-np.min(X))
 
 
-def handle_data(train_scale=0.5,pad=1):
+# 选择不同的kernel size
+def handle_data(train_scale=0.5,kernel_size=7):
     data_corrected=loadmat('../dataset/Indian_pines_corrected.mat')
     data_gt=loadmat('../dataset/Indian_pines_gt.mat')
     data_x=data_corrected['indian_pines_corrected']
     data_y=data_gt['indian_pines_gt']
+
+    pad = (kernel_size - 1) // 2
 
     #归一化
     data_x=normalize(data_x)
@@ -22,18 +26,18 @@ def handle_data(train_scale=0.5,pad=1):
     #pad
     data_x_pad = zero_pad(data_x,pad)
 
-    x_data_all = np.zeros((data_x.shape[0]*data_x.shape[1],2*pad+1,2*pad+1,data_x.shape[2]))
+    x_data_all = np.zeros((data_x.shape[0]*data_x.shape[1],kernel_size,kernel_size,data_x.shape[2]))
     y_data_all = data_y.reshape(-1,1)
 
     for i in range (0,data_x.shape[0]):
         for j in range (data_x.shape[1]):
-            x_data_all[i*data_x.shape[0]+j,:,:,:]=data_x_pad[i:i+3,j:j+3,:]
+            x_data_all[i*data_x.shape[0]+j,:,:,:]=data_x_pad[i:i+kernel_size,j:j+kernel_size,:]
     # print(x_data_all.shape)
     # print(y_data_all.shape)
 
-    x_train=np.zeros((0,2*pad+1,2*pad+1,data_x.shape[2]))
+    x_train=np.zeros((0,kernel_size,kernel_size,data_x.shape[2]))
     y_train=np.zeros((0,1))
-    x_test=np.zeros((0,2*pad+1,2*pad+1,data_x.shape[2]))
+    x_test=np.zeros((0,kernel_size,kernel_size,data_x.shape[2]))
     y_test=np.zeros((0,1))
 
     for k in range (1,17):

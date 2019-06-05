@@ -24,8 +24,8 @@ def pca(x,n=196):
     return new_x_train
 
 
-#建模
-def s_3dcnn_model(input_shape,num_classes=16):
+# 第一种3dcnn模型
+def s1_3dcnn_model(input_shape,num_classes=16):
     model = Sequential()
     model.add(Conv3D(64, kernel_size=(3, 3, 11), strides=(1, 1, 1), padding='same', activation='relu', kernel_regularizer=l2(0.01), input_shape=input_shape))
     model.add(Conv3D(96, kernel_size=(1, 1, 5), strides=(1, 1, 2), padding='valid', activation='relu', kernel_regularizer=l2(0.01)))
@@ -50,11 +50,12 @@ def s_3dcnn_model(input_shape,num_classes=16):
     model.add(Dense(num_classes, activation='softmax'))
 
     model.summary()
-    plot_model(model, to_file='s_3dcnn.png', show_shapes=True)
+    plot_model(model, to_file='s1_3dcnn.png', show_shapes=True)
     return model
 
 
-def s1_3dcnn_model(input_shape,num_classes=16):
+# 第二种3dcnn模型
+def s2_3dcnn_model(input_shape,num_classes=16):
     x_input = Input(input_shape)
     x = Conv3D(64, kernel_size=(1, 1, 11), strides=(1, 1, 1), padding='same', name = 'conv1')(x_input)
     x = BatchNormalization(axis=4, name = 'bn1')(x)
@@ -74,24 +75,95 @@ def s1_3dcnn_model(input_shape,num_classes=16):
 
     x = AveragePooling3D(pool_size=(2,2,2), name = 'avg_pool')(x)
     x = Flatten()(x)
-    x = Dense(num_classes, activation='softmax', name='fc')(x)
+    # 增加一层FC
+    # x = Dropout(0.25)(x)
+    # x = Dense(400, activation='tanh', kernel_regularizer=l2(0.01), name = 'fc1')(x)
+    # x = BatchNormalization(axis=1, name = 'bn4')(x)
+    x = Dense(num_classes, activation='softmax', name='fc1')(x)
 
-    model = Model(inputs = x_input, outputs = x, name = 's1_model')
+    model = Model(inputs = x_input, outputs = x, name = 's2_model')
     model.summary()
-    plot_model(model, to_file='s1_3dcnn.png', show_shapes=True)
+    plot_model(model, to_file='s2_3dcnn.png', show_shapes=True)
+    return model
+
+
+# 第三种3dcnn模型
+def s3_3dcnn_model(input_shape,num_classes=16):
+    x_input = Input(input_shape)
+    x = Conv3D(64, kernel_size=(3, 3, 11), strides=(1, 1, 1), padding='same', name = 'conv1')(x_input)
+    x = BatchNormalization(axis=4, name = 'bn1')(x)
+    x = Activation('relu')(x)
+    x = MaxPooling3D(pool_size=(1, 1, 2))(x)
+
+    x = Dropout(0.25)(x)
+    x = Conv3D(256, kernel_size=(3, 3, 5), strides=(1, 1, 2), padding='same', name = 'conv2')(x)
+    x = BatchNormalization(axis=4, name = 'bn2')(x)
+    x = Activation('relu')(x)
+    x = MaxPooling3D(pool_size=(1, 1, 2))(x)
+
+    x = Dropout(0.25)(x)
+    x = Conv3D(1024, kernel_size=(2, 2, 5), strides=(1, 1, 2), padding='valid', name = 'conv3')(x)
+    x = BatchNormalization(axis=4, name = 'bn3')(x)
+    x = Activation('relu')(x)
+
+    x = AveragePooling3D(pool_size=(2,2,2), name = 'avg_pool')(x)
+    x = Flatten()(x)
+    # 增加一层FC
+    # x = Dropout(0.25)(x)
+    # x = Dense(400, activation='tanh', kernel_regularizer=l2(0.01), name = 'fc1')(x)
+    # x = BatchNormalization(axis=1, name = 'bn4')(x)
+    x = Dense(num_classes, activation='softmax', name='fc1')(x)
+
+    model = Model(inputs = x_input, outputs = x, name = 's3_model')
+    model.summary()
+    plot_model(model, to_file='s3_3dcnn.png', show_shapes=True)
+    return model
+
+
+# 7*7 3dcnn模型
+def s4_3dcnn_model(input_shape,num_classes=16):
+    x_input = Input(input_shape)
+    x = Conv3D(64, kernel_size=(3, 3, 11), strides=(1, 1, 1), padding='valid', name = 'conv1')(x_input)
+    x = BatchNormalization(axis=4, name = 'bn1')(x)
+    x = Activation('relu')(x)
+    x = MaxPooling3D(pool_size=(1, 1, 2))(x)
+
+    x = Dropout(0.25)(x)
+    x = Conv3D(256, kernel_size=(3, 3, 7), strides=(1, 1, 1), padding='valid', name = 'conv2')(x)
+    x = BatchNormalization(axis=4, name = 'bn2')(x)
+    x = Activation('relu')(x)
+    x = MaxPooling3D(pool_size=(1, 1, 2))(x)
+
+    x = Dropout(0.25)(x)
+    x = Conv3D(1024, kernel_size=(2, 2, 5), strides=(1, 1, 1), padding='valid', name = 'conv3')(x)
+    x = BatchNormalization(axis=4, name = 'bn3')(x)
+    x = Activation('relu')(x)
+
+    x = AveragePooling3D(pool_size=(2,2,2), name = 'avg_pool')(x)
+    x = Flatten()(x)
+    # 增加一层FC
+    # x = Dropout(0.25)(x)
+    # x = Dense(400, activation='tanh', kernel_regularizer=l2(0.01), name = 'fc1')(x)
+    # x = BatchNormalization(axis=1, name = 'bn4')(x)
+    x = Dense(num_classes, activation='softmax', name='fc1')(x)
+
+    model = Model(inputs = x_input, outputs = x, name = 's4_model')
+    model.summary()
+    plot_model(model, to_file='s3_3dcnn.png', show_shapes=True)
     return model
 
 
 def run_model(model):
+    lr_scheduler = LearningRateScheduler(lr_schedule)
     model.compile(loss=keras.losses.categorical_crossentropy,
-                    optimizer=keras.optimizers.Adadelta(),
-                    #optimizer=keras.optimizers.Adam(),
+                    #optimizer=keras.optimizers.Adadelta(),
+                    optimizer=keras.optimizers.Adam(lr=lr_schedule(0)),
                     metrics=['accuracy'])
 
     model.fit(x_train, y_train,
                 batch_size=32,
-                epochs=100,
-                #callbacks=[reduce_lr],
+                epochs=300,
+                callbacks=[lr_scheduler],
                 verbose=1)
         
     print("Saving model to disk \n")
@@ -105,13 +177,33 @@ def run_model(model):
 
 
 # 设置学习率
-def scheduler(epoch):
+def lr_schedule(epoch):
     # 每隔100个epoch，学习率减小为原来的1/3
-    if epoch % 100 == 0 and epoch != 0:
-        lr = K.get_value(s_model.optimizer.lr)
-        K.set_value(s_model.optimizer.lr, lr * 0.33)
-        print("lr changed to {}".format(lr * 0.33))
-    return K.get_value(s_model.optimizer.lr)
+    # if epoch % 100 == 0 and epoch != 0:
+    #     lr = K.get_value(s_model.optimizer.lr)
+    #     K.set_value(s_model.optimizer.lr, lr * 0.33)
+    #     print("lr changed to {}".format(lr * 0.33))
+    # return K.get_value(s_model.optimizer.lr)
+
+    # lr = 1e-3
+    # if epoch > 200:
+    #     lr *= 1/81
+    # elif epoch > 150:
+    #     lr *= 1/27
+    # elif epoch > 100:
+    #     lr *= 1/9
+    # elif epoch > 50:
+    #     lr *= 1/3
+    # print('Learning rate: ', lr)
+
+    lr = 1e-3
+    base = 1/4
+    if epoch >0:
+        t = int(epoch / 50)
+        lr = lr * base**t
+    print('Learning rate: ', lr)
+
+    return lr
 
 
 
@@ -120,7 +212,7 @@ if __name__ == '__main__':
     num_classes=16
 
     # 获得数据
-    x_train,y_train,x_test,y_test=handle_data(train_scale=0.4,pad=1)
+    x_train,y_train,x_test,y_test=handle_data(train_scale=0.3,kernel_size=7)
 
     # expand_dims
     x_train=np.expand_dims(x_train,axis=4)
@@ -134,7 +226,5 @@ if __name__ == '__main__':
     print(x_test.shape)
     print(y_test.shape)
 
-    reduce_lr = LearningRateScheduler(scheduler)
-
-    s_model = s1_3dcnn_model(x_train[0].shape)
+    s_model = s4_3dcnn_model(x_train[0].shape)
     run_model(s_model)
