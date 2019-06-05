@@ -149,7 +149,45 @@ def s4_3dcnn_model(input_shape,num_classes=16):
 
     model = Model(inputs = x_input, outputs = x, name = 's4_model')
     model.summary()
-    plot_model(model, to_file='s3_3dcnn.png', show_shapes=True)
+    plot_model(model, to_file='s4_3dcnn.png', show_shapes=True)
+    return model
+
+# 7*7 3dcnn模型
+def s5_3dcnn_model(input_shape,num_classes=16):
+    x_input = Input(input_shape)
+    x = Conv3D(16, kernel_size=(1, 1, 11), strides=(1, 1, 1), padding='valid', name = 'conv1')(x_input)
+    x = BatchNormalization(axis=4, name = 'bn1')(x)
+    x = Activation('relu')(x)
+    x = MaxPooling3D(pool_size=(1, 1, 2))(x)
+
+    x = Dropout(0.25)(x)
+    x = Conv3D(32, kernel_size=(3, 3, 7), strides=(1, 1, 1), padding='valid', name = 'conv2')(x)
+    x = BatchNormalization(axis=4, name = 'bn2')(x)
+    x = Activation('relu')(x)
+    x = MaxPooling3D(pool_size=(1, 1, 2))(x)
+
+    x = Dropout(0.25)(x)
+    x = Conv3D(128, kernel_size=(3, 3, 5), strides=(1, 1, 1), padding='valid', name = 'conv3')(x)
+    x = BatchNormalization(axis=4, name = 'bn3')(x)
+    x = Activation('relu')(x)
+    x = MaxPooling3D(pool_size=(1, 1, 2))(x)
+
+    x = Dropout(0.25)(x)
+    x = Conv3D(256, kernel_size=(2, 2, 5), strides=(1, 1, 1), padding='valid', name = 'conv4')(x)
+    x = BatchNormalization(axis=4, name = 'bn4')(x)
+    x = Activation('relu')(x)
+
+    x = AveragePooling3D(pool_size=(2,2,2), name = 'avg_pool')(x)
+    x = Flatten()(x)
+    # 增加一层FC
+    # x = Dropout(0.25)(x)
+    # x = Dense(400, activation='tanh', kernel_regularizer=l2(0.01), name = 'fc1')(x)
+    # x = BatchNormalization(axis=1, name = 'bn4')(x)
+    x = Dense(num_classes, activation='softmax', name='fc1')(x)
+
+    model = Model(inputs = x_input, outputs = x, name = 's5_model')
+    model.summary()
+    plot_model(model, to_file='s5_3dcnn.png', show_shapes=True)
     return model
 
 
@@ -226,5 +264,5 @@ if __name__ == '__main__':
     print(x_test.shape)
     print(y_test.shape)
 
-    s_model = s4_3dcnn_model(x_train[0].shape)
+    s_model = s5_3dcnn_model(x_train[0].shape)
     run_model(s_model)
