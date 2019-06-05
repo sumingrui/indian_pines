@@ -15,7 +15,11 @@ from sklearn.decomposition import PCA
 from data_pretreat import handle_data
 from PIL import Image
 import cv2
+import traceback
 
+# 获得模型名称
+def get_model_name():
+    return traceback.extract_stack()[-2][2]
 
 # 降维
 def pca(x,n=196):
@@ -24,8 +28,8 @@ def pca(x,n=196):
     return new_x_train
 
 
-# 第一种3dcnn模型
-def s1_3dcnn_model(input_shape,num_classes=16):
+# 3*3 模型
+def s3_1_3dcnn_model(input_shape,num_classes=16):
     model = Sequential()
     model.add(Conv3D(64, kernel_size=(3, 3, 11), strides=(1, 1, 1), padding='same', activation='relu', kernel_regularizer=l2(0.01), input_shape=input_shape))
     model.add(Conv3D(96, kernel_size=(1, 1, 5), strides=(1, 1, 2), padding='valid', activation='relu', kernel_regularizer=l2(0.01)))
@@ -50,12 +54,12 @@ def s1_3dcnn_model(input_shape,num_classes=16):
     model.add(Dense(num_classes, activation='softmax'))
 
     model.summary()
-    plot_model(model, to_file='s1_3dcnn.png', show_shapes=True)
+    plot_model(model, to_file=get_model_name()+'.png', show_shapes=True)
     return model
 
 
-# 第二种3dcnn模型
-def s2_3dcnn_model(input_shape,num_classes=16):
+# 3*3 模型
+def s3_2_3dcnn_model(input_shape,num_classes=16):
     x_input = Input(input_shape)
     x = Conv3D(64, kernel_size=(1, 1, 11), strides=(1, 1, 1), padding='same', name = 'conv1')(x_input)
     x = BatchNormalization(axis=4, name = 'bn1')(x)
@@ -75,34 +79,36 @@ def s2_3dcnn_model(input_shape,num_classes=16):
 
     x = AveragePooling3D(pool_size=(2,2,2), name = 'avg_pool')(x)
     x = Flatten()(x)
-    # 增加一层FC
-    # x = Dropout(0.25)(x)
-    # x = Dense(400, activation='tanh', kernel_regularizer=l2(0.01), name = 'fc1')(x)
-    # x = BatchNormalization(axis=1, name = 'bn4')(x)
     x = Dense(num_classes, activation='softmax', name='fc1')(x)
 
-    model = Model(inputs = x_input, outputs = x, name = 's2_model')
+    model = Model(inputs = x_input, outputs = x, name = get_model_name())
     model.summary()
-    plot_model(model, to_file='s2_3dcnn.png', show_shapes=True)
+    plot_model(model, to_file=get_model_name()+'.png', show_shapes=True)
     return model
 
 
-# 第三种3dcnn模型
-def s3_3dcnn_model(input_shape,num_classes=16):
+# 3*3 模型
+'''
+1. 尝试使用[16,32,64]少数filter, 学习率改变100epoch， 每次1/5。测试结果：
+300 epoch:  0.9325  0.9117
+
+
+'''
+def s3_3_3dcnn_model(input_shape,num_classes=16):
     x_input = Input(input_shape)
-    x = Conv3D(64, kernel_size=(3, 3, 11), strides=(1, 1, 1), padding='same', name = 'conv1')(x_input)
+    x = Conv3D(16, kernel_size=(3, 3, 11), strides=(1, 1, 1), padding='same', name = 'conv1')(x_input)
     x = BatchNormalization(axis=4, name = 'bn1')(x)
     x = Activation('relu')(x)
     x = MaxPooling3D(pool_size=(1, 1, 2))(x)
 
     x = Dropout(0.25)(x)
-    x = Conv3D(256, kernel_size=(3, 3, 5), strides=(1, 1, 2), padding='same', name = 'conv2')(x)
+    x = Conv3D(32, kernel_size=(3, 3, 5), strides=(1, 1, 1), padding='same', name = 'conv2')(x)
     x = BatchNormalization(axis=4, name = 'bn2')(x)
     x = Activation('relu')(x)
     x = MaxPooling3D(pool_size=(1, 1, 2))(x)
 
     x = Dropout(0.25)(x)
-    x = Conv3D(1024, kernel_size=(2, 2, 5), strides=(1, 1, 2), padding='valid', name = 'conv3')(x)
+    x = Conv3D(64, kernel_size=(2, 2, 5), strides=(1, 1, 2), padding='valid', name = 'conv3')(x)
     x = BatchNormalization(axis=4, name = 'bn3')(x)
     x = Activation('relu')(x)
 
@@ -114,14 +120,14 @@ def s3_3dcnn_model(input_shape,num_classes=16):
     # x = BatchNormalization(axis=1, name = 'bn4')(x)
     x = Dense(num_classes, activation='softmax', name='fc1')(x)
 
-    model = Model(inputs = x_input, outputs = x, name = 's3_model')
+    model = Model(inputs = x_input, outputs = x, name = get_model_name())
     model.summary()
-    plot_model(model, to_file='s3_3dcnn.png', show_shapes=True)
+    plot_model(model, to_file=get_model_name()+'.png', show_shapes=True)
     return model
 
 
 # 7*7 3dcnn模型
-def s4_3dcnn_model(input_shape,num_classes=16):
+def s7_1_3dcnn_model(input_shape,num_classes=16):
     x_input = Input(input_shape)
     x = Conv3D(64, kernel_size=(3, 3, 11), strides=(1, 1, 1), padding='valid', name = 'conv1')(x_input)
     x = BatchNormalization(axis=4, name = 'bn1')(x)
@@ -147,13 +153,27 @@ def s4_3dcnn_model(input_shape,num_classes=16):
     # x = BatchNormalization(axis=1, name = 'bn4')(x)
     x = Dense(num_classes, activation='softmax', name='fc1')(x)
 
-    model = Model(inputs = x_input, outputs = x, name = 's4_model')
+    model = Model(inputs = x_input, outputs = x, name = get_model_name())
     model.summary()
-    plot_model(model, to_file='s4_3dcnn.png', show_shapes=True)
+    plot_model(model, to_file=get_model_name()+'.png', show_shapes=True)
     return model
 
-# 7*7 3dcnn模型
-def s5_3dcnn_model(input_shape,num_classes=16):
+# 7*7 3dcnn模型 简化滤波器数量
+'''
+1. 参数变少，前面60个epoch效果很好，loss收敛的很快，到后面会出现准确度又下降的情况，测试结果：
+filter:[16,32,128,256]  60 epoch: 0.9941  0.9753
+2. 训练集0.3 -> 0.5，其余不变，测试结果：
+filter:[16,32,128,256]  60 epoch还没法收敛，
+500 epoch:  0.9649 0.9674  
+学习率调整 50epoch-> 100epoch, 每次变成1/4， 150 epoch: 0.9926  0.9886
+3. 训练集0.5 -> 0.15，其他不变,150 epoch: 0.9045  0.8672
+学习率每次变成1/3， 500 epoch:  
+
+增加滤波函数
+
+
+'''
+def s7_2_3dcnn_model(input_shape,num_classes=16):
     x_input = Input(input_shape)
     x = Conv3D(16, kernel_size=(1, 1, 11), strides=(1, 1, 1), padding='valid', name = 'conv1')(x_input)
     x = BatchNormalization(axis=4, name = 'bn1')(x)
@@ -179,15 +199,49 @@ def s5_3dcnn_model(input_shape,num_classes=16):
 
     x = AveragePooling3D(pool_size=(2,2,2), name = 'avg_pool')(x)
     x = Flatten()(x)
+    x = Dense(num_classes, activation='softmax', name='fc1')(x)
+
+    model = Model(inputs = x_input, outputs = x, name = get_model_name())
+    model.summary()
+    plot_model(model, to_file=get_model_name()+'.png', show_shapes=True)
+    return model
+
+
+# 5*5 input
+'''
+
+
+
+'''
+def s5_1_3dcnn_model(input_shape,num_classes=16):
+    x_input = Input(input_shape)
+    x = Conv3D(16, kernel_size=(1, 1, 11), strides=(1, 1, 1), padding='valid', name = 'conv1')(x_input)
+    x = BatchNormalization(axis=4, name = 'bn1')(x)
+    x = Activation('relu')(x)
+    x = MaxPooling3D(pool_size=(1, 1, 2))(x)
+
+    x = Dropout(0.25)(x)
+    x = Conv3D(32, kernel_size=(3, 3, 7), strides=(1, 1, 1), padding='valid', name = 'conv2')(x)
+    x = BatchNormalization(axis=4, name = 'bn2')(x)
+    x = Activation('relu')(x)
+    x = MaxPooling3D(pool_size=(1, 1, 2))(x)
+
+    x = Dropout(0.25)(x)
+    x = Conv3D(128, kernel_size=(2, 2, 5), strides=(1, 1, 1), padding='valid', name = 'conv3')(x)
+    x = BatchNormalization(axis=4, name = 'bn3')(x)
+    x = Activation('relu')(x)
+
+    x = AveragePooling3D(pool_size=(2,2,2), name = 'avg_pool')(x)
+    x = Flatten()(x)
     # 增加一层FC
     # x = Dropout(0.25)(x)
     # x = Dense(400, activation='tanh', kernel_regularizer=l2(0.01), name = 'fc1')(x)
     # x = BatchNormalization(axis=1, name = 'bn4')(x)
     x = Dense(num_classes, activation='softmax', name='fc1')(x)
 
-    model = Model(inputs = x_input, outputs = x, name = 's5_model')
+    model = Model(inputs = x_input, outputs = x, name = get_model_name())
     model.summary()
-    plot_model(model, to_file='s5_3dcnn.png', show_shapes=True)
+    plot_model(model, to_file=get_model_name()+'.png', show_shapes=True)
     return model
 
 
@@ -200,7 +254,7 @@ def run_model(model):
 
     model.fit(x_train, y_train,
                 batch_size=32,
-                epochs=300,
+                epochs=60,
                 callbacks=[lr_scheduler],
                 verbose=1)
         
@@ -264,5 +318,5 @@ if __name__ == '__main__':
     print(x_test.shape)
     print(y_test.shape)
 
-    s_model = s5_3dcnn_model(x_train[0].shape)
+    s_model = s7_2_3dcnn_model(x_train[0].shape)
     run_model(s_model)
