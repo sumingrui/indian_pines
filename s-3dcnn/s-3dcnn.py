@@ -300,11 +300,11 @@ if __name__ == '__main__':
     bf=True            # 是否滤波
 
     # 如果用ReduceLROnPlateau就不需要lr_by_epoch参数
-    lr_init=0.01
-    lr_by_epoch=60
-    lr_scale=1/3
+    lr_init=0.001
+    lr_by_epoch=50
+    lr_scale=1/4
     n_batch_size=32
-    n_epoch=300
+    n_epoch=60
     optimizer='adam'
 
     

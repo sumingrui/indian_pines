@@ -16,11 +16,11 @@ K.set_learning_phase(0)
 train_scale=0.3
 kernel_size=7
 n_classes=16
-bf=True
+b_bf=True
 model_path='s7_2_3dcnn_model_bf'
 
 # 获得数据
-x_train,y_train,x_test,y_test=handle_data(train_scale,kernel_size)
+x_train,y_train,x_test,y_test=handle_data(train_scale,kernel_size,b_bf)
 f = open(model_path+'.txt','a')
 f.writelines('trainning scale:%f\n'%(train_scale))
 f.writelines('kernel size:%d\n'%(kernel_size))
@@ -103,10 +103,10 @@ def data_process():
 
 
 # 绘制原图和识别图
-def draw_pic(kernel_size=7,bf=False):
+def draw_pic(kernel_size,b_bf):
     x_raw,y_gt = get_rawdata()
     x_raw=normalize(x_raw)
-    if bf:
+    if b_bf:
         x_raw = bf(x_raw)
     # 保存rgb图像和原始gt图像 用spectral库
     # save_rgb('rgb.jpg', x_raw, [29, 19, 9])
@@ -158,5 +158,5 @@ def bf_vs_gt():
 if __name__ == '__main__':
     cal_test_acc()
     data_process()
-    draw_pic(kernel_size,bf)
+    draw_pic(kernel_size,b_bf)
     # bf_vs_gt()

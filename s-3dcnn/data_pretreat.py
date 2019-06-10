@@ -22,7 +22,7 @@ def bf(x_raw):
 
 
 # 选择不同的kernel size
-def handle_data(train_scale=0.3,kernel_size=7, b_bf=False):
+def handle_data(train_scale, kernel_size, b_bf):
     data_corrected=loadmat('../dataset/Indian_pines_corrected.mat')
     data_gt=loadmat('../dataset/Indian_pines_gt.mat')
     data_x=data_corrected['indian_pines_corrected']
