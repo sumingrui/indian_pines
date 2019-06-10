@@ -257,7 +257,7 @@ def run_model(model, model_name, lr_init, lr_by_epoch, lr_scale, n_batch_size, n
 
     tensorboard = TensorBoard(log_dir=model_name+'/logs')
 
-    checkpoint = ModelCheckpoint(filepath=model_name+'/bset_acc.h5',
+    checkpoint = ModelCheckpoint(filepath=model_name+'/best_acc.h5',
                                     monitor='val_acc',
                                     verbose=1,
                                     save_best_only='True',
@@ -301,7 +301,7 @@ if __name__ == '__main__':
 
     # 如果用ReduceLROnPlateau就不需要lr_by_epoch参数
     lr_init=0.01
-    lr_by_epoch=30
+    lr_by_epoch=60
     lr_scale=1/3
     n_batch_size=32
     n_epoch=300
