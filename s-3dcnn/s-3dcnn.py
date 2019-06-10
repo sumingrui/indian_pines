@@ -9,6 +9,7 @@ from keras.regularizers import l2
 from keras.utils import np_utils
 from keras.callbacks import LearningRateScheduler
 from keras.utils import plot_model
+from keras.callbacks import TensorBoard, ModelCheckpoint, ReduceLROnPlateau
 
 import os
 import numpy as np
@@ -62,8 +63,7 @@ def s3_1_3dcnn_model(input_shape,num_classes=16):
 
     model.summary()
     savedir = get_model_name()
-    mkdir(savedir)
-    plot_model(model, to_file=savedir+'/'+savedir+'.png', show_shapes=True)
+
     return model, savedir
 
 
@@ -93,8 +93,7 @@ def s3_2_3dcnn_model(input_shape,num_classes=16):
     model = Model(inputs = x_input, outputs = x, name = get_model_name())
     model.summary()
     savedir = get_model_name()
-    mkdir(savedir)
-    plot_model(model, to_file=savedir+'/'+savedir+'.png', show_shapes=True)
+
     return model, savedir
 
 
@@ -124,8 +123,7 @@ def s3_3_3dcnn_model(input_shape,num_classes=16):
     model = Model(inputs = x_input, outputs = x, name = get_model_name())
     model.summary()
     savedir = get_model_name()
-    mkdir(savedir)
-    plot_model(model, to_file=savedir+'/'+savedir+'.png', show_shapes=True)
+
     return model, savedir
 
 
@@ -155,8 +153,7 @@ def s7_1_3dcnn_model(input_shape,num_classes=16):
     model = Model(inputs = x_input, outputs = x, name = get_model_name())
     model.summary()
     savedir = get_model_name()
-    mkdir(savedir)
-    plot_model(model, to_file=savedir+'/'+savedir+'.png', show_shapes=True)
+
     return model, savedir
 
 # 7*7 3dcnn模型 简化滤波器数量
@@ -191,8 +188,7 @@ def s7_2_3dcnn_model(input_shape,num_classes=16):
     model = Model(inputs = x_input, outputs = x, name = get_model_name())
     model.summary()
     savedir = get_model_name()
-    mkdir(savedir)
-    plot_model(model, to_file=savedir+'/'+savedir+'.png', show_shapes=True)
+
     return model, savedir
 
 
@@ -226,8 +222,8 @@ def s5_1_3dcnn_model(input_shape,num_classes=16):
     model = Model(inputs = x_input, outputs = x, name = get_model_name())
     model.summary()
     savedir = get_model_name()
-    mkdir(savedir)
-    plot_model(model, to_file=savedir+'/'+savedir+'.png', show_shapes=True)
+    # mkdir(savedir)
+    # plot_model(model, to_file=savedir+'/'+savedir+'.png', show_shapes=True)
     return model, savedir
 
 
@@ -253,19 +249,35 @@ def lr_schedule(epoch,lr_init,lr_by_epoch,lr_scale):
 
 
 def run_model(model, model_name, lr_init, lr_by_epoch, lr_scale, n_batch_size, n_epoch, k_optimizer):
+    # ReduceLROnPlateau和LearningRateScheduler选一个
     lr_s = partial(lr_schedule,lr_init=lr_init, lr_by_epoch=lr_by_epoch, lr_scale=lr_scale)
     lr_scheduler = LearningRateScheduler(lr_s)
+
+    reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=lr_scale, patience=5, mode='auto')
+
+    tensorboard = TensorBoard(log_dir=model_name+'/logs')
+
+    checkpoint = ModelCheckpoint(filepath=model_name+'/bset_acc.h5',
+                                    monitor='val_acc',
+                                    verbose=1,
+                                    save_best_only='True',
+                                    mode='max',
+                                    period=1)
+
+    callback_lists = [tensorboard, checkpoint, reduce_lr]
 
     if k_optimizer=='adam':
         model.compile(loss=keras.losses.categorical_crossentropy,
                         #optimizer=keras.optimizers.Adadelta(),
                         optimizer=keras.optimizers.Adam(lr=lr_init),
-                        metrics=['accuracy'])
+                        metrics=['accuracy','crossentropy'])
 
     model.fit(x_train, y_train,
                 batch_size=n_batch_size,
                 epochs=n_epoch,
-                callbacks=[lr_scheduler],
+                # callbacks=[lr_scheduler, tensorboard, checkpoint],
+                callbacks=callback_lists,
+                validation_data=(x_test, y_test),
                 verbose=1)
         
     print("Saving model to disk \n")
@@ -286,11 +298,13 @@ if __name__ == '__main__':
     train_scale=0.3     # 训练集比例
     kernel_size=7       # 样本尺寸
     bf=True            # 是否滤波
+
+    # 如果用ReduceLROnPlateau就不需要lr_by_epoch参数
     lr_init=0.01
     lr_by_epoch=30
     lr_scale=1/3
     n_batch_size=32
-    n_epoch=120
+    n_epoch=300
     optimizer='adam'
 
     
@@ -310,4 +324,8 @@ if __name__ == '__main__':
     print(y_test.shape)
 
     s_model, model_name = s7_2_3dcnn_model(x_train[0].shape)
+
+    mkdir(model_name)
+    plot_model(s_model, to_file=model_name+'/'+model_name+'.png', show_shapes=True)
+
     run_model(s_model, model_name, lr_init, lr_by_epoch, lr_scale, n_batch_size, n_epoch, optimizer)
