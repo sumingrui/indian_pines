@@ -103,10 +103,10 @@ def data_process():
 
 
 # 绘制原图和识别图
-def draw_pic(kernel_size,bf):
+def draw_pic(kernel_size,b_bf):
     x_raw,y_gt = get_rawdata()
     x_raw=normalize(x_raw)
-    if bf:
+    if b_bf:
         x_raw = bf(x_raw)
     # 保存rgb图像和原始gt图像 用spectral库
     # save_rgb('rgb.jpg', x_raw, [29, 19, 9])
