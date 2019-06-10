@@ -253,7 +253,7 @@ def run_model(model, model_name, lr_init, lr_by_epoch, lr_scale, n_batch_size, n
     lr_s = partial(lr_schedule,lr_init=lr_init, lr_by_epoch=lr_by_epoch, lr_scale=lr_scale)
     lr_scheduler = LearningRateScheduler(lr_s)
 
-    reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=lr_scale, patience=5, verbose=1, mode='auto')
+    # reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=lr_scale, patience=5, verbose=1, mode='auto')
 
     tensorboard = TensorBoard(log_dir=model_name+'/logs')
 
@@ -264,7 +264,7 @@ def run_model(model, model_name, lr_init, lr_by_epoch, lr_scale, n_batch_size, n
                                     mode='max',
                                     period=1)
 
-    callback_lists = [tensorboard, checkpoint, reduce_lr]
+    callback_lists = [tensorboard, checkpoint, lr_scheduler]
 
     if k_optimizer=='adam':
         model.compile(loss=keras.losses.categorical_crossentropy,
