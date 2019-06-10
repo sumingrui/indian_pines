@@ -10,12 +10,14 @@ from keras.utils import np_utils
 from keras.callbacks import LearningRateScheduler
 from keras.utils import plot_model
 
+import os
 import numpy as np
 from sklearn.decomposition import PCA
 from data_pretreat import handle_data
 from PIL import Image
 import cv2
 import traceback
+from functools import partial
 
 # 获得模型名称
 def get_model_name():
@@ -27,6 +29,11 @@ def pca(x,n=196):
     new_x_train=pca.fit_transform(x)
     return new_x_train
 
+# 创建子文件夹
+def mkdir(path):
+    folder = os.path.exists(path)
+    if not folder:
+        os.makedirs(path)
 
 # 3*3 模型
 def s3_1_3dcnn_model(input_shape,num_classes=16):
@@ -54,8 +61,10 @@ def s3_1_3dcnn_model(input_shape,num_classes=16):
     model.add(Dense(num_classes, activation='softmax'))
 
     model.summary()
-    plot_model(model, to_file=get_model_name()+'.png', show_shapes=True)
-    return model
+    savedir = get_model_name()
+    mkdir(savedir)
+    plot_model(model, to_file=savedir+'/'+savedir+'.png', show_shapes=True)
+    return model, savedir
 
 
 # 3*3 模型
@@ -83,17 +92,13 @@ def s3_2_3dcnn_model(input_shape,num_classes=16):
 
     model = Model(inputs = x_input, outputs = x, name = get_model_name())
     model.summary()
-    plot_model(model, to_file=get_model_name()+'.png', show_shapes=True)
-    return model
+    savedir = get_model_name()
+    mkdir(savedir)
+    plot_model(model, to_file=savedir+'/'+savedir+'.png', show_shapes=True)
+    return model, savedir
 
 
-# 3*3 模型
-'''
-1. 尝试使用[16,32,64]少数filter, 学习率改变100epoch， 每次1/5。测试结果：
-300 epoch:  0.9325  0.9117
-
-
-'''
+# 3*3 模型 简化滤波器数量
 def s3_3_3dcnn_model(input_shape,num_classes=16):
     x_input = Input(input_shape)
     x = Conv3D(16, kernel_size=(3, 3, 11), strides=(1, 1, 1), padding='same', name = 'conv1')(x_input)
@@ -114,16 +119,14 @@ def s3_3_3dcnn_model(input_shape,num_classes=16):
 
     x = AveragePooling3D(pool_size=(2,2,2), name = 'avg_pool')(x)
     x = Flatten()(x)
-    # 增加一层FC
-    # x = Dropout(0.25)(x)
-    # x = Dense(400, activation='tanh', kernel_regularizer=l2(0.01), name = 'fc1')(x)
-    # x = BatchNormalization(axis=1, name = 'bn4')(x)
     x = Dense(num_classes, activation='softmax', name='fc1')(x)
 
     model = Model(inputs = x_input, outputs = x, name = get_model_name())
     model.summary()
-    plot_model(model, to_file=get_model_name()+'.png', show_shapes=True)
-    return model
+    savedir = get_model_name()
+    mkdir(savedir)
+    plot_model(model, to_file=savedir+'/'+savedir+'.png', show_shapes=True)
+    return model, savedir
 
 
 # 7*7 3dcnn模型
@@ -147,53 +150,37 @@ def s7_1_3dcnn_model(input_shape,num_classes=16):
 
     x = AveragePooling3D(pool_size=(2,2,2), name = 'avg_pool')(x)
     x = Flatten()(x)
-    # 增加一层FC
-    # x = Dropout(0.25)(x)
-    # x = Dense(400, activation='tanh', kernel_regularizer=l2(0.01), name = 'fc1')(x)
-    # x = BatchNormalization(axis=1, name = 'bn4')(x)
     x = Dense(num_classes, activation='softmax', name='fc1')(x)
 
     model = Model(inputs = x_input, outputs = x, name = get_model_name())
     model.summary()
-    plot_model(model, to_file=get_model_name()+'.png', show_shapes=True)
-    return model
+    savedir = get_model_name()
+    mkdir(savedir)
+    plot_model(model, to_file=savedir+'/'+savedir+'.png', show_shapes=True)
+    return model, savedir
 
 # 7*7 3dcnn模型 简化滤波器数量
-'''
-1. 参数变少，前面60个epoch效果很好，loss收敛的很快，到后面会出现准确度又下降的情况，测试结果：
-filter:[16,32,128,256]  60 epoch: 0.9941  0.9753
-2. 训练集0.3 -> 0.5，其余不变，测试结果：
-filter:[16,32,128,256]  60 epoch还没法收敛，
-500 epoch:  0.9649 0.9674  
-学习率调整 50epoch-> 100epoch, 每次变成1/4， 150 epoch: 0.9926  0.9886
-3. 训练集0.5 -> 0.15，其他不变,150 epoch: 0.9045  0.8672
-学习率每次变成1/3， 500 epoch:  
-
-增加滤波函数
-
-
-'''
 def s7_2_3dcnn_model(input_shape,num_classes=16):
     x_input = Input(input_shape)
-    x = Conv3D(16, kernel_size=(1, 1, 11), strides=(1, 1, 1), padding='valid', name = 'conv1')(x_input)
+    x = Conv3D(16, kernel_size=(1, 1, 11), strides=(1, 1, 1), padding='valid', name = 'conv1', kernel_regularizer=l2(0.01))(x_input)
     x = BatchNormalization(axis=4, name = 'bn1')(x)
     x = Activation('relu')(x)
     x = MaxPooling3D(pool_size=(1, 1, 2))(x)
 
     x = Dropout(0.25)(x)
-    x = Conv3D(32, kernel_size=(3, 3, 7), strides=(1, 1, 1), padding='valid', name = 'conv2')(x)
+    x = Conv3D(32, kernel_size=(3, 3, 7), strides=(1, 1, 1), padding='valid', name = 'conv2', kernel_regularizer=l2(0.01))(x)
     x = BatchNormalization(axis=4, name = 'bn2')(x)
     x = Activation('relu')(x)
     x = MaxPooling3D(pool_size=(1, 1, 2))(x)
 
     x = Dropout(0.25)(x)
-    x = Conv3D(128, kernel_size=(3, 3, 5), strides=(1, 1, 1), padding='valid', name = 'conv3')(x)
+    x = Conv3D(128, kernel_size=(3, 3, 5), strides=(1, 1, 1), padding='valid', name = 'conv3', kernel_regularizer=l2(0.01))(x)
     x = BatchNormalization(axis=4, name = 'bn3')(x)
     x = Activation('relu')(x)
     x = MaxPooling3D(pool_size=(1, 1, 2))(x)
 
     x = Dropout(0.25)(x)
-    x = Conv3D(256, kernel_size=(2, 2, 5), strides=(1, 1, 1), padding='valid', name = 'conv4')(x)
+    x = Conv3D(256, kernel_size=(2, 2, 5), strides=(1, 1, 1), padding='valid', name = 'conv4', kernel_regularizer=l2(0.01))(x)
     x = BatchNormalization(axis=4, name = 'bn4')(x)
     x = Activation('relu')(x)
 
@@ -203,16 +190,13 @@ def s7_2_3dcnn_model(input_shape,num_classes=16):
 
     model = Model(inputs = x_input, outputs = x, name = get_model_name())
     model.summary()
-    plot_model(model, to_file=get_model_name()+'.png', show_shapes=True)
-    return model
+    savedir = get_model_name()
+    mkdir(savedir)
+    plot_model(model, to_file=savedir+'/'+savedir+'.png', show_shapes=True)
+    return model, savedir
 
 
 # 5*5 input
-'''
-
-
-
-'''
 def s5_1_3dcnn_model(input_shape,num_classes=16):
     x_input = Input(input_shape)
     x = Conv3D(16, kernel_size=(1, 1, 11), strides=(1, 1, 1), padding='valid', name = 'conv1')(x_input)
@@ -241,25 +225,51 @@ def s5_1_3dcnn_model(input_shape,num_classes=16):
 
     model = Model(inputs = x_input, outputs = x, name = get_model_name())
     model.summary()
-    plot_model(model, to_file=get_model_name()+'.png', show_shapes=True)
-    return model
+    savedir = get_model_name()
+    mkdir(savedir)
+    plot_model(model, to_file=savedir+'/'+savedir+'.png', show_shapes=True)
+    return model, savedir
 
 
-def run_model(model):
-    lr_scheduler = LearningRateScheduler(lr_schedule)
-    model.compile(loss=keras.losses.categorical_crossentropy,
-                    #optimizer=keras.optimizers.Adadelta(),
-                    optimizer=keras.optimizers.Adam(lr=lr_schedule(0)),
-                    metrics=['accuracy'])
+# 设置学习率
+def lr_schedule(epoch,lr_init,lr_by_epoch,lr_scale):
+    # lr = 1e-3
+    # base = 1/3
+    # if epoch >0:
+    #     t = int(epoch / 30)
+    #     lr = lr * base**t
+    # print('Learning rate: ', lr)
+
+    # return lr
+
+    lr = lr_init
+    base = lr_scale
+    if epoch >0:
+        t = int(epoch / lr_by_epoch)
+        lr = lr * base**t
+    print('Learning rate: ', lr)
+
+    return lr
+
+
+def run_model(model, model_name, lr_init, lr_by_epoch, lr_scale, n_batch_size, n_epoch, k_optimizer):
+    lr_s = partial(lr_schedule,lr_init=lr_init, lr_by_epoch=lr_by_epoch, lr_scale=lr_scale)
+    lr_scheduler = LearningRateScheduler(lr_s)
+
+    if k_optimizer=='adam':
+        model.compile(loss=keras.losses.categorical_crossentropy,
+                        #optimizer=keras.optimizers.Adadelta(),
+                        optimizer=keras.optimizers.Adam(lr=lr_init),
+                        metrics=['accuracy'])
 
     model.fit(x_train, y_train,
-                batch_size=32,
-                epochs=60,
+                batch_size=n_batch_size,
+                epochs=n_epoch,
                 callbacks=[lr_scheduler],
                 verbose=1)
         
     print("Saving model to disk \n")
-    path="s_cnn_model.h5"
+    path=model_name+'/'+model_name+'.h5'
     model.save(path)
 
     print(y_test.shape)
@@ -268,43 +278,24 @@ def run_model(model):
     print('Test accuracy:', score[1])
 
 
-# 设置学习率
-def lr_schedule(epoch):
-    # 每隔100个epoch，学习率减小为原来的1/3
-    # if epoch % 100 == 0 and epoch != 0:
-    #     lr = K.get_value(s_model.optimizer.lr)
-    #     K.set_value(s_model.optimizer.lr, lr * 0.33)
-    #     print("lr changed to {}".format(lr * 0.33))
-    # return K.get_value(s_model.optimizer.lr)
-
-    # lr = 1e-3
-    # if epoch > 200:
-    #     lr *= 1/81
-    # elif epoch > 150:
-    #     lr *= 1/27
-    # elif epoch > 100:
-    #     lr *= 1/9
-    # elif epoch > 50:
-    #     lr *= 1/3
-    # print('Learning rate: ', lr)
-
-    lr = 1e-3
-    base = 1/4
-    if epoch >0:
-        t = int(epoch / 50)
-        lr = lr * base**t
-    print('Learning rate: ', lr)
-
-    return lr
-
-
 
 if __name__ == '__main__':
     K.set_image_data_format('channels_last')
-    num_classes=16
+    
+    # 设置参数
+    train_scale=0.3     # 训练集比例
+    kernel_size=7       # 样本尺寸
+    bf=True            # 是否滤波
+    lr_init=0.01
+    lr_by_epoch=30
+    lr_scale=1/3
+    n_batch_size=32
+    n_epoch=120
+    optimizer='adam'
 
+    
     # 获得数据
-    x_train,y_train,x_test,y_test=handle_data(train_scale=0.3,kernel_size=7)
+    x_train,y_train,x_test,y_test=handle_data(train_scale,kernel_size,bf)
 
     # expand_dims
     x_train=np.expand_dims(x_train,axis=4)
@@ -318,5 +309,5 @@ if __name__ == '__main__':
     print(x_test.shape)
     print(y_test.shape)
 
-    s_model = s7_2_3dcnn_model(x_train[0].shape)
-    run_model(s_model)
+    s_model, model_name = s7_2_3dcnn_model(x_train[0].shape)
+    run_model(s_model, model_name, lr_init, lr_by_epoch, lr_scale, n_batch_size, n_epoch, optimizer)

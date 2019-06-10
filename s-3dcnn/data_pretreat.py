@@ -1,5 +1,6 @@
 from scipy.io import loadmat
 import numpy as np
+import cv2
 
 # pad function
 def zero_pad(X,pad):
@@ -7,12 +8,21 @@ def zero_pad(X,pad):
     return X_pad
 
 def normalize(X):
+    print('import normalize ... ...')
     X = X.astype('float32')
     return (X-np.min(X))/(np.max(X)-np.min(X))
 
+# 双边滤波
+def bf(x_raw):
+    x_bi = np.zeros((x_raw.shape))
+    print('import bf ... ...')
+    for i in range(x_raw.shape[2]):
+        x_bi[:,:,i] = cv2.bilateralFilter(x_raw[:,:,i], 7, 50, 50)
+    return x_bi
+
 
 # 选择不同的kernel size
-def handle_data(train_scale=0.5,kernel_size=7):
+def handle_data(train_scale=0.3,kernel_size=7, b_bf=False):
     data_corrected=loadmat('../dataset/Indian_pines_corrected.mat')
     data_gt=loadmat('../dataset/Indian_pines_gt.mat')
     data_x=data_corrected['indian_pines_corrected']
@@ -22,6 +32,10 @@ def handle_data(train_scale=0.5,kernel_size=7):
 
     #归一化
     data_x=normalize(data_x)
+
+    # 双边滤波
+    if b_bf==True:
+        data_x = bf(data_x)
 
     #pad
     data_x_pad = zero_pad(data_x,pad)
@@ -80,3 +94,10 @@ def handle_data(train_scale=0.5,kernel_size=7):
 
     return x_train,y_train,x_test,y_test
 
+# 获得原始数据
+def get_rawdata():
+    data_corrected=loadmat('../dataset/Indian_pines_corrected.mat')
+    data_gt=loadmat('../dataset/Indian_pines_gt.mat')
+    data_x=data_corrected['indian_pines_corrected']
+    data_y=data_gt['indian_pines_gt']
+    return data_x,data_y
